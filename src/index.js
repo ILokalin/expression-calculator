@@ -9,7 +9,9 @@ function expressionCalculator(expr) {
           outputList = [];
     
     const setRatingForOperator = operator => {
-        const ratirator = {}
+        const ratirator = {
+            operator
+        }
 
         if (operator === '/' || operator === '*') {
             ratirator.rating = 2;
@@ -23,18 +25,16 @@ function expressionCalculator(expr) {
             ratirator.rating = 0;
         }
 
-        ratirator.operator = operator
-
         return ratirator;
     }
 
-    const checkPriorityOperation = operator => {
+    const checkPriorityOperation = newOperator => {
         let isLookForOperator = true;
 
         while (stackOperation.length > 0 && isLookForOperator) {
             const prevOperator = stackOperation.pop();
             
-            if (prevOperator.rating >= operator.rating) {
+            if (prevOperator.rating >= newOperator.rating) {
                 outputList.push(prevOperator);
             } else {
                 stackOperation.push(prevOperator)
@@ -42,7 +42,7 @@ function expressionCalculator(expr) {
             }
         }
 
-        stackOperation.push(operator);
+        stackOperation.push(newOperator);
     }
 
     arrExpr.forEach(item => {
@@ -60,32 +60,41 @@ function expressionCalculator(expr) {
 
         if (item ===')') {
             let isLookForBracket = true;
-            let prevOperation;
 
             while (stackOperation.length > 0 && isLookForBracket) {
-                prevOperation = stackOperation.pop();
+                const prevOperator = stackOperation.pop();
 
-                if (prevOperation.operator === '(') {
+                if (prevOperator.operator === '(') {
                     isLookForBracket = false;
                 } else {
-                    if (/[-+/*//]/.test(prevOperation.operator)) {
-                        outputList.push(prevOperation);
-                    }
                     if (stackOperation.length === 0) {
                         throw 'ExpressionError: Brackets must be paired';
                     }
+                    outputList.push(prevOperator);
                 }
             }
         }
     })
 
 
-    if (stackOperation.findIndex(item => item.operator === '(') > -1) {
+    if (stackOperation.findIndex(item => item.operator === '(' ) > -1) {
         throw 'ExpressionError: Brackets must be paired';
     }
 
     while (stackOperation.length > 0) {
         outputList.push(stackOperation.pop());
+    }
+
+    const operation = {
+        '+': (a, b) => a + b,
+        '-': (a, b) => a - b,
+        '*': (a, b) => a * b,
+        '/': (a, b) => {
+            if (b === 0) {
+                throw 'TypeError: Division by zero.';
+            }
+            return a / b;
+        }
     }
 
     outputList.forEach(item => {
@@ -97,27 +106,7 @@ function expressionCalculator(expr) {
             let regB = Number(stackOperation.pop());
             let regA = Number(stackOperation.pop());
 
-            switch (item.operator) {
-                case '+':
-                    regA += regB;
-                    break;
-                case '-':
-                    regA -= regB;
-                    break;
-                case '/':
-                    if(regB === 0) {
-                        throw 'TypeError: Division by zero.';
-                    }
-                    regA /= regB;
-                    break;
-                case '*':
-                    regA *= regB;
-                    break;
-                default:
-                    throw 'Undefined operator';
-                    break;
-            }
-            stackOperation.push(regA);
+            stackOperation.push(operation[item.operator](regA, regB))
         }
     })
 
